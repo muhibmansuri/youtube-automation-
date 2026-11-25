@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeAura Cinema Studio - Autonomous AI Movie Generator</title>
+    <!-- Modern Google Fonts & Lucide Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dark-theme">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <div class="logo-badge">
+                <i data-lucide="clapperboard" class="icon-brand"></i>
+                <div class="logo-text">
+                    <span class="logo-title">CodeAura <span class="highlight">Cinema Studio</span></span>
+                    <span class="logo-subtitle">Continuous Feature Film AI Pipeline</span>
+                </div>
+            </div>
+
+            <!-- Active Project Dropdown -->
+            <div class="project-selector-wrapper">
+                <select id="projectSelect" class="cyber-select" onchange="switchProject(this.value)">
+                    <option value="">-- Select or Create Project --</option>
+                </select>
+                <button class="btn btn-sm btn-outline" onclick="openNewProjectModal()">
+                    <i data-lucide="folder-plus"></i> New Movie
+                </button>
+            </div>
+        </div>
+
+        <!-- Global Status Bar -->
+        <div class="header-right">
+            <!-- Pipeline State Pill -->
+            <div id="pipelineStatusPill" class="status-pill idle">
+                <span class="pulse-dot"></span>
+                <span id="pipelineStatusText">Pipeline: IDLE</span>
+            </div>
+
+            <!-- Daily Quota Indicator -->
+            <div class="quota-pill" title="Daily Video Allowance on TAAFT">
+                <i data-lucide="zap" class="icon-zap"></i>
+                <span id="quotaCounterText">Quota: -- / 100</span>
+            </div>
+
+            <!-- Browser Session State -->
+            <button class="btn btn-sm btn-ghost" onclick="launchLoginBrowser()" title="Launch Persistent Chromium Window to Log in to TAAFT">
+                <i data-lucide="external-link"></i> Launch Browser Login
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-nav">
+        <button class="nav-tab active" data-tab="tab-setup" onclick="switchTab('tab-setup')">
+            <i data-lucide="film"></i> 1. Movie Setup & Characters
+        </button>
+        <button class="nav-tab" data-tab="tab-storyboard" onclick="switchTab('tab-storyboard')">
+            <i data-lucide="layout-grid"></i> 2. Storyboard & Scene Queue
+        </button>
+        <button class="nav-tab" data-tab="tab-automation" onclick="switchTab('tab-automation')">
+            <i data-lucide="play-circle"></i> 3. Live Automation Center
+        </button>
+        <button class="nav-tab" data-tab="tab-compiler" onclick="switchTab('tab-compiler')">
+            <i data-lucide="video"></i> 4. Movie Compiler Studio
+        </button>
+        <button class="nav-tab" data-tab="tab-settings" onclick="switchTab('tab-settings')">
+            <i data-lucide="sliders"></i> 5. Settings & Diagnostics
+        </button>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <!-- TAB 1: MOVIE SETUP & CHARACTERS -->
+        <section id="tab-setup" class="tab-pane active">
+            <div class="pane-grid">
+                <!-- Movie Concept Form -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="sparkles"></i> Feature Film Narrative Concept</h3>
+                        <span class="badge badge-info">Gemini AI Scriptwriter</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Movie Title</label>
+                            <input type="text" id="setupTitle" class="form-control" placeholder="e.g. Neon Horizon 2099">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <label>Genre</label>
+                                <select id="setupGenre" class="form-control">
+                                    <option value="Cinematic Sci-Fi / Cyberpunk">Cinematic Sci-Fi / Cyberpunk</option>
+                                    <option value="Dark Fantasy & Mythic Epic">Dark Fantasy & Mythic Epic</option>
+                                    <option value="High-Octane Action Thriller">High-Octane Action Thriller</option>
+                                    <option value="Psychological Horror / Mystery">Psychological Horror / Mystery</option>
+                                    <option value="Period Drama & Cinematic History">Period Drama & Cinematic History</option>
+                                    <option value="Neo-Noir Crime Detective">Neo-Noir Crime Detective</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Target Movie Duration</label>
+                                <div class="slider-wrapper">
+                                    <input type="range" id="setupDuration" min="5" max="180" step="5" value="120" oninput="updateDurationCalc(this.value)">
+                                    <div class="duration-label">
+                                        <span id="durationVal">120</span> mins 
+                                        (<span id="totalClipsVal">900</span> x 8s clips)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group col-4">
+                                <label><i data-lucide="zap"></i> TAAFT Generation Mode</label>
+                                <select id="setupModelType" class="form-control" style="border-color: #6366f1; font-weight: 600;">
+                                    <option value="Fast" selected>⚡ Fast Mode (~2-3m / clip)</option>
+                                    <option value="Quality">💎 Quality Mode (~20m / clip)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Storyline / Narrative Arc</label>
+                            <textarea id="setupStoryline" rows="5" class="form-control" placeholder="Describe the master story, inciting incident, character motives, climax, and world atmosphere..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Master Character Profile & Visual DNA (Locked Identity)</label>
+                            <textarea id="setupCharacter" rows="3" class="form-control" placeholder="e.g. Maya Lin, 28, female cyber-runner with striking hazel eyes, athletic build, short textured dark brown bob, wearing an obsidian matte tactical jacket with neon amber collar trim..."></textarea>
+                            <small class="helper-text">This visual description is automatically injected into every single scene prompt to lock identity.</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-lg" onclick="saveProjectSetup()">
+                                <i data-lucide="save"></i> Save Movie Setup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reference Images & Assets -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="image"></i> Master Reference Images (&lt;Image 1&gt;)</h3>
+                        <span class="badge badge-purple">Continuity Anchors</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="description-text">
+                            Upload 1 to 3 Master Character / Costume / Style reference sheets. In every prompt, TAAFT is instructed to strictly preserve facial features and wardrobe from <code>&lt;Image 1&gt;</code>.
+                        </p>
+
+                        <!-- Upload Dropzone -->
+                        <div class="dropzone" id="refDropzone" onclick="document.getElementById('refFileInput').click()">
+                            <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+                            <p><strong>Click to upload</strong> Master Character Sheet(s)</p>
+                            <span>PNG, JPG, WEBP (Up to 3 images)</span>
+                            <input type="file" id="refFileInput" multiple accept="image/*" style="display: none;" onchange="handleRefUpload(this.files)">
+                        </div>
+
+                        <!-- Gallery of uploaded master references -->
+                        <div class="ref-gallery" id="refGallery">
+                            <div class="empty-state">No master reference images uploaded yet.</div>
+                        </div>
+
+                        <hr class="divider">
+
+                        <!-- Background Music Track Uploader -->
+                        <div class="form-group">
+                            <label><i data-lucide="music"></i> Movie Soundtrack / Score (Optional)</label>
+                            <input type="file" id="audioFileInput" accept="audio/*" class="form-control" onchange="handleAudioUpload(this.files)">
+                            <small class="helper-text">Upload cinematic background music to automatically loop & mix across the entire movie.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: STORYBOARD & SCENE QUEUE -->
+        <section id="tab-storyboard" class="tab-pane">
+            <div class="storyboard-header-bar glass-card">
+                <div class="stats-counter-group">
+                    <div class="stat-box">
+                        <span class="stat-num" id="statTotalScenes">0</span>
+                        <span class="stat-label">Total Scenes</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num text-success" id="statCompletedScenes">0</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num text-warning" id="statPendingScenes">0</span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num text-danger" id="statFailedScenes">0</span>
+                        <span class="stat-label">Failed</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num text-info" id="statProgressPct">0%</span>
+                        <span class="stat-label">Movie Ready</span>
+                    </div>
+                </div>
+
+                <div class="script-gen-controls">
+                    <button class="btn btn-primary" onclick="openScriptGenModal()">
+                        <i data-lucide="wand-2"></i> Generate Scenes with Gemini
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadScenes()">
+                        <i data-lucide="refresh-cw"></i> Refresh Board
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scene Filter Tabs -->
+            <div class="scene-filter-bar">
+                <button class="filter-chip active" onclick="filterScenes('ALL')">All Scenes</button>
+                <button class="filter-chip" onclick="filterScenes('PENDING')">Pending</button>
+                <button class="filter-chip" onclick="filterScenes('GENERATING')">In Progress</button>
+                <button class="filter-chip" onclick="filterScenes('COMPLETED')">Completed</button>
+                <button class="filter-chip" onclick="filterScenes('FAILED')">Failed</button>
+            </div>
+
+            <!-- Storyboard Scene Cards Grid -->
+            <div class="storyboard-grid" id="storyboardGrid">
+                <div class="empty-state large">
+                    <i data-lucide="clapperboard" class="large-icon"></i>
+                    <h4>No scenes generated yet</h4>
+                    <p>Click "Generate Scenes with Gemini" above to automatically break down your storyline into 8-second cinematic prompts.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: LIVE AUTOMATION CENTER -->
+        <section id="tab-automation" class="tab-pane">
+            <!-- Master Control Ribbon -->
+            <div class="automation-ribbon glass-card">
+                <div class="controls-left">
+                    <button id="btnStartPipeline" class="btn btn-success btn-lg" onclick="startAutomation()">
+                        <i data-lucide="play"></i> Start Automation
+                    </button>
+                    <button id="btnPausePipeline" class="btn btn-warning btn-lg" onclick="pauseAutomation()" disabled>
+                        <i data-lucide="pause"></i> Pause
+                    </button>
+                    <button id="btnResumePipeline" class="btn btn-info btn-lg" onclick="resumeAutomation()" style="display: none;">
+                        <i data-lucide="play-circle"></i> Resume
+                    </button>
+                    <button id="btnStopPipeline" class="btn btn-danger btn-lg" onclick="stopAutomation()" disabled>
+                        <i data-lucide="square"></i> Stop
+                    </button>
+                </div>
+
+                <div class="controls-right" style="display: flex; align-items: center; gap: 15px;">
+                    <div class="model-select-wrap" style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #a5b4fc; text-transform: uppercase;"><i data-lucide="zap"></i> Mode:</span>
+                        <select id="taaftModelSelect" class="form-control" onchange="updateProjectModel(this.value)" style="width: auto; padding: 6px 12px; font-weight: 600; font-size: 13px; background: rgba(15, 23, 42, 0.8); border: 1px solid #6366f1; border-radius: 8px; color: #f8fafc;">
+                            <option value="Fast" selected>⚡ Fast Mode (2-3 min / clip)</option>
+                            <option value="Quality">💎 Quality Mode (20 min / clip)</option>
+                        </select>
+                    </div>
+                    <label class="toggle-switch-label">
+                        <input type="checkbox" id="headlessToggle" checked>
+                        <span>Headless Execution</span>
+                    </label>
+                    <button class="btn btn-outline" onclick="launchLoginBrowser()">
+                        <i data-lucide="browser"></i> Open Interactive Browser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Automation Monitoring Grid -->
+            <div class="automation-grid">
+                <!-- Left: Live Browser Preview -->
+                <div class="card glass-card browser-viewer-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="monitor"></i> Headless Browser Live Feed</h3>
+                        <span class="badge badge-pulse" id="browserLiveBadge">TAAFT Live Screen</span>
+                    </div>
+                    <div class="card-body preview-body">
+                        <div class="browser-frame-wrapper">
+                            <img id="browserPreviewImg" src="/static/img/browser_placeholder.png" onerror="this.src='https://placehold.co/960x540/0d131f/475569?text=Waiting+for+Automation+Stream...'" alt="TAAFT Live Screen">
+                        </div>
+                        <div class="browser-meta-bar">
+                            <span id="currentActionStatus">Status: Ready to generate</span>
+                            <span id="currentClipEta">ETA: ~18m per clip</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Real-time Terminal Log Console -->
+                <div class="card glass-card terminal-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="terminal"></i> Automation Terminal Logs</h3>
+                        <button class="btn btn-xs btn-ghost" onclick="clearLogs()"><i data-lucide="trash-2"></i> Clear</button>
+                    </div>
+                    <div class="card-body terminal-body" id="terminalLogs">
+                        <div class="log-line info">[SYSTEM] TAAFT Automation Engine Initialized. Ready to produce continuous film.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: MOVIE COMPILER & EDITING STUDIO -->
+        <section id="tab-compiler" class="tab-pane">
+            <div class="pane-grid">
+                <!-- Easy User-Controlled Editing Studio -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="sliders"></i> Cinema Editing Studio (તમારા હાથમાં બધું એડિટિંગ)</h3>
+                        <span class="badge badge-success">Easy Controls</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="description-text">
+                            અહીંથી તમે નક્કી કરી શકો છો કે તમારી મૂવીમાં અવાજ, બેકગ્રાઉન્ડ મ્યુઝિક, થિયેટર લૂક અને સબટાઇટલ્સ કેવા રાખવા છે.
+                        </p>
+
+                        <!-- 1. Audio & Voice Mode -->
+                        <div class="form-row">
+                            <div class="form-group col-12">
+                                <label>🎙️ ૧. અવાજ કેવો રાખવો? (Audio & Voice Mode)</label>
+                                <select id="compileAudioMode" class="form-control">
+                                    <option value="storyteller" selected>Mythra Storyteller Mode (વાર્તાકારનો અવાજ + મ્યુઝિક, ડબલ અવાજ બંધ)</option>
+                                    <option value="original_with_bgm">Original Video Voice + Music (અસલ લિપ-સિન્ક અને અવાજ + મ્યુઝિક)</option>
+                                    <option value="original_only">Original Only (કોઈ ફેરફાર વગર સીધા વિડિયો જોડો)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 2. Background Music & Volume -->
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>🎵 ૨. બેકગ્રાઉન્ડ મ્યુઝિક અપલોડ (Optional MP3/WAV)</label>
+                                <input type="file" id="studioAudioUpload" accept="audio/*" class="form-control" onchange="handleStudioAudioUpload(event)">
+                                <small class="helper-text" id="studioAudioStatus">ખાલી રાખશો તો Auto Thriller Piano/Cello/Rain મ્યુઝિક લાગશે.</small>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>🔊 મ્યુઝિકનું વોલ્યુમ (Background Music Volume)</label>
+                                <input type="range" id="compileMusicVol" min="0.0" max="1.0" step="0.05" value="0.45" oninput="document.getElementById('musicVolVal').innerText = Math.round(this.value * 100) + '%'">
+                                <small>Music Level: <strong id="musicVolVal">45%</strong> (બોલતી વખતે આપોઆપ ધીમું થશે)</small>
+                            </div>
+                        </div>
+
+                        <!-- 3. Cinema Look, Framing & Subtitles -->
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <label>🎬 ૩. સ્ક્રીન સાઈઝ (Framing)</label>
+                                <select id="compileWidescreen" class="form-control">
+                                    <option value="true" selected>2.39:1 Cinema (કાળી પટ્ટીઓ)</option>
+                                    <option value="false">16:9 Full Screen</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>🎨 કલર લૂક (Color Grade)</label>
+                                <select id="compileColorGrade" class="form-control">
+                                    <option value="noir" selected>Dark Thriller (Teal & Orange)</option>
+                                    <option value="natural">Natural (ઓરિજિનલ કલર)</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>📝 સબટાઇટલ્સ (Subtitles)</label>
+                                <select id="compileSubtitles" class="form-control">
+                                    <option value="true" selected>Show Hindi Subtitles</option>
+                                    <option value="false">No Subtitles</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 4. Resolution & Transition -->
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>📺 ૪. વિડિયો ક્વોલિટી (Resolution)</label>
+                                <select id="compileResolution" class="form-control">
+                                    <option value="1080p" selected>1080p Full HD</option>
+                                    <option value="4k">4K Ultra HD</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>✂️ સીન કટ સ્ટાઇલ (Scene Cut)</label>
+                                <select id="compileTransition" class="form-control">
+                                    <option value="direct" selected>Direct Cinema Cut (ઝડપી અને પરફેક્ટ)</option>
+                                    <option value="crossfade">Smooth Fade (ધીમો ફેડ)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="compileNormalize" value="true">
+                        <input type="hidden" id="compileEnhance" value="true">
+
+                        <div class="compile-progress-box" id="compileProgressBox" style="display: none;">
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-fill" id="compileProgressBar" style="width: 0%;"></div>
+                            </div>
+                            <div class="compile-status-text" id="compileStatusText">Rendering movie...</div>
+                        </div>
+
+                        <div class="form-actions" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
+                            <button class="btn btn-primary btn-lg" onclick="triggerMovieCompilation()">
+                                <i data-lucide="play"></i> 🎬 Render & Compile Movie Now
+                            </button>
+                            <button class="btn btn-purple btn-lg" onclick="triggerAIUpscaling()" title="Real-ESRGAN GPU 4K Upscale">
+                                <i data-lucide="sparkles"></i> ⚡ AI 4K Face & Video Upscale
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Movie Video Player & Version Switcher -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="tv"></i> Screening Room (બનેલી મૂવી અહીં જુઓ)</h3>
+                        <span class="badge badge-purple" id="movieBadge">Compiled Film</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="video-preview-wrapper" id="moviePlayerContainer">
+                            <video id="finalMovieVideo" controls class="final-video-player" poster="https://placehold.co/960x540/0a0f1d/6366f1?text=No+Movie+Compiled+Yet">
+                                <source id="finalMovieSource" src="" type="video/mp4">
+                                Your browser does not support HTML5 video.
+                            </video>
+                        </div>
+                        <div class="movie-download-actions" id="movieDownloadRow" style="display: none; margin-top: 15px;">
+                            <a id="downloadMovieBtn" href="#" download class="btn btn-success btn-lg">
+                                <i data-lucide="download"></i> Download Selected Movie (.mp4)
+                            </a>
+                        </div>
+                        <div id="compiledVersionsList" style="margin-top: 16px;"></div>
+                    </div>
+                </div>
+
+                <!-- Neural Voice Studio & AI Dubbing Lab -->
+                <div class="card glass-card" style="grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <h3><i data-lucide="mic"></i> Neural Human Voice Studio (14 Studio Voices)</h3>
+                        <span class="badge badge-success">Studio Neural TTS Active</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="description-text">
+                            Preview human-like neural voices across Hindi, Gujarati, Indian English & Hollywood English. Clean Cinema Mode mutes TAAFT's distorted robotic noise completely and mixes pure studio dialogue.
+                        </p>
+
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <label>Select Neural Voice</label>
+                                <select id="voiceSelector" class="form-control">
+                                    <optgroup label="Hindi Cinema Voices">
+                                        <option value="hi_arjun" selected>Inspector Arjun (Hindi Male - Gritty Detective)</option>
+                                        <option value="hi_maya">Maya (Hindi Female - Mysterious & Soft)</option>
+                                        <option value="hi_kabir">Kabir (Hindi Male - Intense Action)</option>
+                                        <option value="hi_ananya">Ananya (Hindi Female - Emotional Drama)</option>
+                                        <option value="hi_caller">Unknown Caller (Hindi Male - Telephone FX)</option>
+                                    </optgroup>
+                                    <optgroup label="Gujarati Regional Voices">
+                                        <option value="gu_niranjan">Niranjan (Gujarati Male - Authentic Natural)</option>
+                                        <option value="gu_dhwani">Dhwani (Gujarati Female - Sweet & Expressive)</option>
+                                    </optgroup>
+                                    <optgroup label="Indian English Voices">
+                                        <option value="in_prabhat">Prabhat (Indian English Male - Modern Lead)</option>
+                                        <option value="in_neerja">Neerja (Indian English Female - Sophisticated)</option>
+                                    </optgroup>
+                                    <optgroup label="Hollywood / Cinematic English">
+                                        <option value="us_christopher">Christopher (Hollywood Movie Trailer Male)</option>
+                                        <option value="us_aria">Aria (Hollywood Cinema Female - Emotionally Expressive)</option>
+                                        <option value="us_guy">Guy (Cinematic Storyteller Male)</option>
+                                        <option value="us_eric">Eric (Gritty Street Crime Thriller Male)</option>
+                                        <option value="ur_asad">Asad (Poetic / Heavy Dramatic Baritone)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>Sample Dialogue for Audition</label>
+                                <input type="text" id="voiceSampleText" class="form-control" value="क्योंकि कातिल... तुम खुद हो।" placeholder="Enter test dialogue...">
+                            </div>
+                            <div class="form-group col-2" style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-primary btn-block" onclick="testVoicePreview()" id="btnVoicePreview">
+                                    <i data-lucide="volume-2"></i> Test Voice
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="voiceAudioPlayerBox" style="display: none; margin-top: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; align-items: center; gap: 15px;">
+                            <span style="font-size: 13px; color: var(--accent);"><i data-lucide="headphones"></i> Voice Audition:</span>
+                            <audio id="voiceAudioPlayer" controls style="flex: 1; height: 36px;"></audio>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 15px; display: flex; gap: 12px; align-items: center;">
+                            <button class="btn btn-purple" onclick="triggerRedubProject()">
+                                <i data-lucide="repeat"></i> 🎙️ Re-Dub Existing Clips (Mute TAAFT Noise & Apply Clean Voices)
+                            </button>
+                            <span class="helper-text" style="margin: 0; color: #10b981;">
+                                <i data-lucide="shield-check"></i> Clean Audio Mode Active: TAAFT robotic glitch noise is 100% muted.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: SETTINGS & DIAGNOSTICS -->
+        <section id="tab-settings" class="tab-pane">
+            <div class="pane-grid">
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="key"></i> Gemini API & Scriptwriter Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Gemini API Key</label>
+                            <input type="password" id="settingsGeminiKey" class="form-control" placeholder="AIzaSy...">
+                            <small class="helper-text">Key is saved securely in your local SQLite settings database.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Gemini Model</label>
+                            <select id="settingsGeminiModel" class="form-control">
+                                <option value="gemini-3.8-flash">gemini-3.8-flash (Recommended - Latest & Fast)</option>
+                                <option value="gemini-flash-latest">gemini-flash-latest (Auto-Updating Flash)</option>
+                                <option value="gemini-3.5-flash">gemini-3.5-flash (High Performance)</option>
+                                <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Deep Narrative Logic)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                            <button class="btn btn-outline" onclick="testGeminiConnection()">Test Connection</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="cpu"></i> System Diagnostics</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="diag-item">
+                            <span>OpenCV Frame Extractor:</span>
+                            <span class="badge badge-success">cv2 v5.0.0 Ready</span>
+                        </div>
+                        <div class="diag-item">
+                            <span>FFmpeg Media Engine:</span>
+                            <span id="diagFfmpeg" class="badge badge-info">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span>Playwright Persistent Profile:</span>
+                            <span class="badge badge-purple">./browser_profile</span>
+                        </div>
+                        <div class="diag-item">
+                            <span>TAAFT Daily Allowance:</span>
+                            <span class="badge badge-warning">100 clips / 24 hrs</span>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 20px;">
+                            <button class="btn btn-outline" onclick="testFfmpegDiagnostic()">Test FFmpeg Executable</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: New Project -->
+    <div class="modal-overlay" id="newProjectModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="film"></i> Start New Movie Project</h3>
+                <button class="modal-close" onclick="closeNewProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="modalProjectName" class="form-control" placeholder="e.g. Blade Runner 2099">
+                </div>
+                <div class="form-group">
+                    <label>Genre</label>
+                    <select id="modalGenre" class="form-control">
+                        <option value="Cinematic Sci-Fi / Cyberpunk">Cinematic Sci-Fi / Cyberpunk</option>
+                        <option value="Dark Fantasy & Mythic Epic">Dark Fantasy & Mythic Epic</option>
+                        <option value="High-Octane Action Thriller">High-Octane Action Thriller</option>
+                        <option value="Psychological Horror / Mystery">Psychological Horror / Mystery</option>
+                        <option value="Neo-Noir Crime Detective">Neo-Noir Crime Detective</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Target Duration (Minutes)</label>
+                    <input type="number" id="modalDuration" class="form-control" min="5" max="180" value="120">
+                </div>
+                <div class="form-group">
+                    <label>Storyline / Premise</label>
+                    <textarea id="modalStoryline" rows="4" class="form-control" placeholder="A rogue android synthetics detective in Neo-Tokyo hunts down an encrypted memory core..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeNewProjectModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitCreateProject()">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Script Generation -->
+    <div class="modal-overlay" id="scriptGenModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="sparkles"></i> AI Scene Breakdown Generator</h3>
+                <button class="modal-close" onclick="closeScriptGenModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Break down your storyline into sequential 8-second clips with strict character & lighting locks referencing &lt;Image 1&gt; and &lt;Image 2&gt;.</p>
+                <div class="form-group">
+                    <label>Script Engine</label>
+                    <select id="scriptGenMode" class="form-control">
+                        <option value="autonomous">⚡ Autonomous Zero-API Engine (Instant, 100% Free, No API Key Required)</option>
+                        <option value="gemini">🤖 Gemini AI API (gemini-3.8-flash)</option>
+                    </select>
+                    <small class="helper-text">Autonomous Engine runs locally on your PC with zero API limits, zero cost, and zero timeouts.</small>
+                </div>
+                <div class="form-group">
+                    <label>Starting Scene #</label>
+                    <input type="number" id="scriptGenStart" class="form-control" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Batch Size (Scenes to generate)</label>
+                    <input type="number" id="scriptGenBatch" class="form-control" value="30" min="5" max="100">
+                    <small class="helper-text">Select how many 8-second scenes to generate in this batch.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeScriptGenModal()">Cancel</button>
+                <button class="btn btn-primary" id="btnSubmitScriptGen" onclick="submitScriptGeneration()">
+                    <i data-lucide="sparkles"></i> Generate Prompts
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Video Preview -->
+    <div class="modal-overlay" id="videoPreviewModal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="videoPreviewTitle">Clip Preview</h3>
+                <button class="modal-close" onclick="closeVideoPreviewModal()">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <video id="modalVideoPlayer" controls autoplay style="width: 100%; border-radius: 8px;">
+                    <source id="modalVideoSource" src="" type="video/mp4">
+                </video>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

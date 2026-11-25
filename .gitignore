@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Browser Session & Cookies (Private!)
+browser_profile/
+
+# Generated Movies, Clips, Audio & User Uploads (Large Media)
+projects/
+*.mp4
+*.wav
+*.mp3
+*.srt
+
+# Large AI Model Binaries / Tools
+tools/
+
+# Python Cache & Logs
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Temporary & Scratch Files
+scratch/
+test_taaft_screenshot.png
+.DS_Store
+Thumbs.db
