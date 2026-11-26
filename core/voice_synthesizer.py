@@ -303,7 +303,11 @@ class VoiceSynthesizer:
             if ok_gem:
                 return True
 
-        # 3. Fallback: Microsoft Neural Studio Engine (pitch=+0Hz to avoid metallic vocoder buzz)
+        # 3. Offline Unlimited Kokoro-ONNX Human Voice (when models are installed in C:\cinema_venv\models)
+        if cls.generate_kokoro_speech(text, character, output_path):
+            return True
+
+        # 4. Fallback: Microsoft Neural Studio Engine (pitch=+0Hz to avoid metallic vocoder buzz)
         try:
             import edge_tts
         except ImportError:
@@ -345,6 +349,47 @@ class VoiceSynthesizer:
             if os.path.exists(raw_output):
                 try: os.remove(raw_output)
                 except Exception: pass
+            return False
+
+    @classmethod
+    def generate_kokoro_speech(cls, text: str, character: str = "hi_arjun", output_path: str = "") -> bool:
+        """
+        Offline, unlimited human-grade TTS using Kokoro-ONNX (stored on C:\\cinema_venv\\models).
+        """
+        try:
+            model_path = r"C:\cinema_venv\models\kokoro-v1.0.onnx"
+            voices_path = r"C:\cinema_venv\models\voices-v1.0.bin"
+            if not (os.path.exists(model_path) and os.path.exists(voices_path)):
+                return False
+            from kokoro_onnx import Kokoro
+            import soundfile as sf
+            import tempfile
+
+            kokoro = Kokoro(model_path, voices_path)
+            char_key = character.lower().strip()
+            # Map characters to Kokoro Hindi/English voices
+            is_hindi = any("\u0900" <= ch <= "\u097f" for ch in text)
+            if is_hindi:
+                voice_id = "hf_alpha" if ("maya" in char_key or "ananya" in char_key) else "hm_omega"
+                lang = "hi"
+            else:
+                voice_id = "af_bella" if ("maya" in char_key or "aria" in char_key) else "am_adam"
+                lang = "en-us"
+
+            samples, sr = kokoro.create(text, voice=voice_id, speed=0.92, lang=lang)
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                tmp_wav = tf.name
+            sf.write(tmp_wav, samples, sr)
+            cmd = [FFMPEG_PATH, "-y", "-i", tmp_wav, "-af", "aresample=48000,aformat=channel_layouts=stereo", "-b:a", "192k", output_path]
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                os.remove(tmp_wav)
+            except Exception:
+                pass
+            return res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 500
+        except Exception as e:
+            print(f"[KOKORO NOTICE] {e}")
             return False
 
     @classmethod
