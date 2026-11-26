@@ -445,12 +445,30 @@ class AutonomousScriptEngine:
                 )
                 ref_images = ["<Image 1>", "<Image 2>"]
 
+            shot_framing = [
+                "Extreme Close-Up on eyes and micro-expressions",
+                "Over-the-Shoulder dramatic framing",
+                "Subtle Dutch Angle tension shot",
+                "Slow cinematic dolly push-in",
+                "Atmospheric wide establishing shot"
+            ][(s_num - 1) % 5]
+            foley_cue = [
+                "Heavy midnight rain, distant thunder",
+                "Metallic door creak, distant police siren",
+                "Slow footsteps on wet floor, subtle heartbeat",
+                "Three deep clock ticks, tense silence",
+                "Deep cinematic sub-bass impact"
+            ][(s_num - 1) % 5]
+
             full_prompt = (
-                f"Cinematic 8k photorealistic film still. {theme_data['lens']}. "
-                f"Protagonist: {char_desc}. "
+                f"Live-action 35mm ARRI Alexa feature film footage. {theme_data['lens']}. "
+                f"Framing: {shot_framing}. "
+                f"Protagonist: {char_desc}, real human skin pores, natural micro-blinking, subtle breathing, emotional gaze, "
+                f"mouth completely closed, NO talking or random lip movement on camera, no CGI gloss, no plastic skin. "
                 f"Action (8s continuous): {action_snippet} as part of {story_beat}. "
                 f"Camera: {camera_motion}. "
                 f"Lighting: {theme_data['lighting']}, {theme_data['atmosphere']}. Color grading: {theme_data['palette']}. "
+                f"Sound & Woofer Design: {foley_cue}. "
                 f"{continuity_clause}"
             )
 
@@ -602,17 +620,22 @@ class GeminiScriptwriter:
 You are a Lead AI Cinematographer crafting sequential prompts for the TAAFT 8-second Video Generator.
 Every prompt must ensure unbroken character, wardrobe, lighting, and camera continuity.
 
-CRITICAL CONTINUITY SPECIFICATIONS:
+CRITICAL CONTINUITY & HOLLYWOOD REALISM SPECIFICATIONS:
 1. Platform Constraint: Each video generated is exactly 8 seconds long. Action must fit within 8s.
-2. Character Identity Lock: Always describe the protagonist with identical specific visual tags:
+2. Human Realism Lock: Every shot must specify "Live-action 35mm ARRI Alexa footage, real human skin pores, natural micro-blinking, subtle breathing, emotional gaze, no CGI gloss, no plastic skin".
+3. Lip-Sync & Narrator Control (VERY IMPORTANT):
+   - For Off-Screen Narrator / Voice-Over scenes: explicitly write "mouth completely closed, silent intense expression, NO lip movement on camera" AND put the Hindi/English narrator line in quotes after `Off-screen voice-over: "..."` (max 10-12 words so it finishes cleanly).
+   - For Visual/Action-only scenes: write "no talking, silent tense reaction" and include explicit `Sound & Woofer Design:` tags (e.g., `police siren`, `door creak`, `thunder`, `footsteps`, `heartbeat`, `clock ticks`, `phone ringtone`, `bass impact`).
+   - Never put ALL-CAPS on-screen text or headlines inside quotation marks `""`.
+4. Character Identity Lock: Always describe the protagonist with identical specific visual tags:
    {character_profile}
-3. Reference Image Integration:
+5. Reference Image Integration:
    - <Image 1>: Master Character Sheet.
    - <Image 2>: The exact last frame of the previous scene.
    For scene 1: "Match character identity from <Image 1>."
    For scenes > 1: "Maintain strict character visual identity from <Image 1>. Start precisely from ending composition, pose, and lighting of <Image 2> for flawless continuous camera flow."
-4. Cinematic Camera Work: Define clear 8-second camera motion (e.g. slow dolly in, tracking pan, steady focus rack).
-5. Visual Atmosphere: Specify lighting, lens, and environment.
+6. Shot Variety & Tension Pacing: Alternate framing across scenes (Extreme Close-Up on eyes, Over-the-Shoulder, Dutch Angle, Slow Dolly Push-In, Atmospheric Wide) with clear 8-second camera motion.
+7. Visual Atmosphere: Specify practical motivated lighting, lens, and environment.
 
 PROJECT DETAILS:
 - Storyline: {storyline}

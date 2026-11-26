@@ -209,13 +209,17 @@ class VoiceSynthesizer:
 
         for m in matches:
             text = m.group(1).strip()
-            # Ignore technical prompt strings that happen to be quoted
+            # Ignore technical prompt strings or on-screen visual text (e.g. ALL-CAPS headlines/notes)
             if text.startswith("<Image") or len(text) < 2:
+                continue
+            if text.isupper() and any(c.isalpha() for c in text):
                 continue
 
             # Check context prefix (up to 150 chars before the quote)
             idx = m.start()
             prefix = prompt_text[max(0, idx - 150):idx].lower()
+            if any(k in prefix for k in ["headline", "written on", "mirror reads", "text reads", "folder stamped", "file labeled"]):
+                continue
 
             if any(k in prefix for k in ["maya", "whisper", "female", "woman"]):
                 character = "hi_maya"
@@ -248,7 +252,8 @@ class VoiceSynthesizer:
                                    character: str = "hi_arjun", 
                                    output_path: str = "",
                                    elevenlabs_api_key: Optional[str] = None,
-                                   elevenlabs_voice_id: Optional[str] = None) -> bool:
+                                   elevenlabs_voice_id: Optional[str] = None,
+                                   prefer_gemini: bool = True) -> bool:
         """
         Synthesizes high-fidelity human speech using Microsoft Neural Edge-TTS
         or ElevenLabs (if configured).
@@ -279,7 +284,14 @@ class VoiceSynthesizer:
             except Exception as ele_err:
                 print(f"[VOICE ELEVENLABS NOTICE] {ele_err}. Falling back to Neural Studio...")
 
-        # 2. Microsoft Neural Studio Engine
+        # 2. Gemini 2.5 Expressive Human Acting Voice Engine (only if prefer_gemini=True)
+        gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) if prefer_gemini else None
+        if gemini_key:
+            ok_gem = cls.generate_gemini_speech(text, character, output_path, api_key=gemini_key)
+            if ok_gem:
+                return True
+
+        # 3. Fallback: Microsoft Neural Studio Engine (pitch=+0Hz to avoid metallic vocoder buzz)
         try:
             import edge_tts
         except ImportError:
@@ -289,8 +301,8 @@ class VoiceSynthesizer:
         char_key = character.lower().strip()
         config = cls.VOICE_CATALOG.get(char_key, cls.VOICE_MAP.get(char_key, cls.VOICE_CATALOG["hi_arjun"]))
         voice = config["voice"]
-        rate = config.get("rate", "+0%")
-        pitch = config.get("pitch", "+0Hz")
+        rate = config.get("rate", "-6%")
+        pitch = "+0Hz"
 
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         raw_output = output_path + ".raw.mp3" if config.get("telephone_filter") else output_path
@@ -324,10 +336,77 @@ class VoiceSynthesizer:
             return False
 
     @classmethod
-    def generate_speech(cls, text: str, character: str = "hi_arjun", output_path: str = "") -> bool:
+    def generate_gemini_speech(cls, text: str, character: str = "hi_arjun", output_path: str = "", api_key: Optional[str] = None) -> bool:
+        """
+        Generates expressive, non-robotic human-acting cinema dialogue using Gemini 2.5 Flash TTS.
+        """
+        try:
+            import wave
+            import tempfile
+            from google import genai
+            from google.genai import types
+
+            key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if not key:
+                return False
+
+            char_key = character.lower().strip()
+            actor_profiles = {
+                "hi_arjun": ("Charon", "Speak in a deep, mature, gritty Indian crime-detective voice with natural slow pacing, emotional weight, and subtle pauses:"),
+                "hi_maya": ("Aoede", "Speak in a soft, mysterious, emotional Indian woman voice with natural breath and quiet suspense:"),
+                "hi_kabir": ("Fenrir", "Speak in a sharp, commanding, intense Indian male cinema voice:"),
+                "hi_ananya": ("Kore", "Speak in a gentle, heartfelt, emotional Indian woman voice:"),
+                "hi_caller": ("Puck", "Speak in a tense, eerie, whispering mysterious caller voice:"),
+            }
+            voice_name, direction = actor_profiles.get(
+                char_key,
+                ("Charon", "Speak naturally like a dramatic cinema actor with genuine emotion and pauses:")
+            )
+
+            client = genai.Client(api_key=key)
+            resp = client.models.generate_content(
+                model="gemini-2.5-flash-preview-tts",
+                contents=f"{direction} {text}",
+                config=types.GenerateContentConfig(
+                    response_modalities=["AUDIO"],
+                    speech_config=types.SpeechConfig(
+                        voice_config=types.VoiceConfig(
+                            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
+                        )
+                    ),
+                ),
+            )
+            pcm_data = resp.candidates[0].content.parts[0].inline_data.data
+            if not pcm_data or len(pcm_data) < 1000:
+                return False
+
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                tmp_wav = tf.name
+            with wave.open(tmp_wav, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(24000)
+                wf.writeframes(pcm_data)
+
+            is_caller = char_key == "hi_caller"
+            af = "highpass=f=300,lowpass=f=3400,volume=1.25" if is_caller else "aresample=48000,aformat=channel_layouts=stereo"
+            cmd = [FFMPEG_PATH, "-y", "-i", tmp_wav, "-af", af, "-b:a", "192k", output_path]
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                os.remove(tmp_wav)
+            except Exception:
+                pass
+            return res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 500
+        except Exception as e:
+            print(f"[GEMINI TTS NOTICE] {e}. Falling back to Neural Studio...")
+            return False
+
+    @classmethod
+    def generate_speech(cls, text: str, character: str = "hi_arjun", output_path: str = "", prefer_gemini: bool = True) -> bool:
         """Synchronous wrapper for generate_speech_async."""
         try:
-            return asyncio.run(cls.generate_speech_async(text, character, output_path))
+            return asyncio.run(cls.generate_speech_async(text, character, output_path, prefer_gemini=prefer_gemini))
         except Exception as e:
             print(f"[VOICE ERROR] Sync execution failed: {e}")
             return False

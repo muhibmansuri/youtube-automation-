@@ -158,11 +158,46 @@ class CinemaAudioStudio:
         secs = total_sec % 60
         return f"{hrs:02d}:{mins:02d}:{secs:02d},{ms:03d}"
 
+    def apply_theater_mastering(self, input_audio_path: str, output_wav_path: str) -> bool:
+        """
+        Applies Dolby-Cinema-style spatial mastering using Spotify's Pedalboard DSP engine:
+        - Cinema Hall Reverb for wide theater room depth
+        - Sub-Bass LowShelf (+4.5 dB @ 85Hz) for theater woofer punch
+        - Studio Compressor & Limiter (-1.0 dB ceiling)
+        """
+        try:
+            import numpy as np
+            from pedalboard import Pedalboard, Reverb, Compressor, HighpassFilter, LowShelfFilter, Limiter
+            from pedalboard.io import AudioFile
+
+            board = Pedalboard([
+                HighpassFilter(cutoff_frequency_hz=32.0),
+                LowShelfFilter(cutoff_frequency_hz=85.0, gain_db=4.5, q=0.7),
+                Compressor(threshold_db=-16.0, ratio=2.8, attack_ms=12.0, release_ms=160.0),
+                Reverb(room_size=0.45, damping=0.65, wet_level=0.14, dry_level=0.90, width=0.85),
+                Limiter(threshold_db=-1.0, release_ms=80.0),
+            ])
+
+            with AudioFile(input_audio_path) as f:
+                audio = f.read(f.frames)
+                sr = f.samplerate
+
+            effected = board(audio, sr)
+            with AudioFile(output_wav_path, "w", sr, effected.shape[0]) as out:
+                out.write(effected)
+
+            self.log("success", "🎭 Applied Spotify Pedalboard Dolby-Theater Hall Mastering!")
+            return os.path.exists(output_wav_path)
+        except Exception as e:
+            self.log("warning", f"Pedalboard theater mastering skipped: {e}")
+            return False
+
     def build_storytelling_track(self,
                                  scenes: List[Dict],
                                  voices_dir: Path,
                                  output_voice_wav: str,
                                  output_srt_path: str,
+                                 force_regen: bool = False,
                                  progress_callback: Optional[Callable[[float, str], None]] = None) -> Dict:
         """
         Synthesizes neural Hindi/English narrator & character dialogue for each scene,
@@ -184,9 +219,9 @@ class CinemaAudioStudio:
             dlg = VoiceSynthesizer.extract_dialogue(s.get("prompt", ""))
             if dlg and dlg.get("text"):
                 voice_file = str(voices_dir / f"voice_{s_num:03d}.mp3")
-                if not os.path.exists(voice_file) or os.path.getsize(voice_file) < 500:
+                if force_regen or not os.path.exists(voice_file) or os.path.getsize(voice_file) < 500:
                     if progress_callback:
-                        progress_callback(10.0 + (idx / max(1, total)) * 20.0, f"Synthesizing Storytelling Voice for Scene #{s_num:03d}...")
+                        progress_callback(10.0 + (idx / max(1, total)) * 20.0, f"Synthesizing Expressive Human Voice for Scene #{s_num:03d}...")
                     VoiceSynthesizer.generate_speech(dlg["text"], character=dlg["character"], output_path=voice_file)
 
                 if os.path.exists(voice_file) and os.path.getsize(voice_file) > 500:
