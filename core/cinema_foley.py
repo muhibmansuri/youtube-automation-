@@ -198,7 +198,9 @@ class CinemaFoleyEngine:
         events: List[Tuple[float, str]] = []
         for start_t, prompt in scene_timings:
             for cue in self.detect_scene_sfx(prompt):
-                events.append((start_t + 0.25, cue))
+                # J-Cut Audio Bridge: start incoming SFX 0.55s before the visual cut (except opening 0.0s)
+                sfx_t = max(0.0, start_t - 0.55) if start_t > 1.0 else 0.15
+                events.append((sfx_t, cue))
 
         if not events:
             return False

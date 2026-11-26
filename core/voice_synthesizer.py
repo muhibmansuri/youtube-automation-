@@ -258,7 +258,19 @@ class VoiceSynthesizer:
         Synthesizes high-fidelity human speech using Microsoft Neural Edge-TTS
         or ElevenLabs (if configured).
         """
-        # 1. Optional ElevenLabs Engine (if API key provided)
+        # 1. Optional ElevenLabs Engine (from args, env, or SQLite settings)
+        if not elevenlabs_api_key:
+            elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY", "").strip()
+            if not elevenlabs_api_key:
+                try:
+                    from database import db
+                    elevenlabs_api_key = (db.get_setting("elevenlabs_api_key", "") or "").strip()
+                    if not elevenlabs_voice_id:
+                        elevenlabs_voice_id = (db.get_setting("elevenlabs_voice_id", "") or "").strip()
+                except Exception:
+                    pass
+        if elevenlabs_api_key and not elevenlabs_voice_id:
+            elevenlabs_voice_id = "pNInz6obpgDQGcFmaJgB"  # Default Adam deep cinema narrator
         if elevenlabs_api_key and elevenlabs_voice_id:
             try:
                 import urllib.request

@@ -425,6 +425,7 @@ def compile_movie(project_id):
             enhance_quality=enhance_quality,
             color_grade=color_grade,
             cinema_widescreen=cinema_widescreen,
+            movie_title=proj.get("name"),
             resolution=resolution,
             progress_callback=lambda pct, msg: pipeline.emit_event("compile_progress", {"percent": pct, "message": msg})
         )
@@ -533,6 +534,10 @@ def update_settings():
     data = request.json or {}
     if "gemini_api_key" in data and data["gemini_api_key"].strip():
         db.set_setting("gemini_api_key", data["gemini_api_key"].strip())
+    if "elevenlabs_api_key" in data and data["elevenlabs_api_key"].strip():
+        db.set_setting("elevenlabs_api_key", data["elevenlabs_api_key"].strip())
+    if "elevenlabs_voice_id" in data and data["elevenlabs_voice_id"].strip():
+        db.set_setting("elevenlabs_voice_id", data["elevenlabs_voice_id"].strip())
         os.environ["GEMINI_API_KEY"] = data["gemini_api_key"].strip()
 
     if "gemini_model" in data:

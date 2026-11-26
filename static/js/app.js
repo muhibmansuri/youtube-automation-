@@ -821,9 +821,13 @@ async function loadSettings() {
 async function saveSettings() {
     const key = document.getElementById("settingsGeminiKey").value.trim();
     const model = document.getElementById("settingsGeminiModel").value;
+    const elevenKey = document.getElementById("settingsElevenKey") ? document.getElementById("settingsElevenKey").value.trim() : "";
+    const elevenVoice = document.getElementById("settingsElevenVoiceId") ? document.getElementById("settingsElevenVoiceId").value.trim() : "";
 
     const payload = { gemini_model: model };
     if (key) payload.gemini_api_key = key;
+    if (elevenKey) payload.elevenlabs_api_key = elevenKey;
+    if (elevenVoice) payload.elevenlabs_voice_id = elevenVoice;
 
     try {
         const res = await fetch("/api/settings", {

@@ -32,6 +32,7 @@ class MovieCompiler:
                       enhance_quality: bool = True,      # Hollywood Sharpening + Neo-Noir Contrast + Sub-Bass
                       color_grade: str = "noir",         # "noir" or "natural"
                       cinema_widescreen: bool = True,    # 2.39:1 Anamorphic Cinema Letterbox Bars
+                      movie_title: Optional[str] = None, # Adds 4.5s Opening Title Card & 5s Closing Credits if set
                       resolution: str = "1080p",        # "1080p" or "4k"
                       progress_callback: Optional[Callable[[float, str], None]] = None) -> dict:
         """
@@ -111,6 +112,32 @@ class MovieCompiler:
 
             duration = round(time.time() - start_time, 1)
             if res.get("success"):
+                if movie_title and resolution.lower() != "4k":
+                    try:
+                        from core.cinema_title import CinemaTitleGenerator
+                        tg = CinemaTitleGenerator(ffmpeg_path=self.ffmpeg_path, log_callback=self.log)
+                        with tempfile.TemporaryDirectory() as tdir:
+                            intro_mp4 = os.path.join(tdir, "intro.mp4")
+                            outro_mp4 = os.path.join(tdir, "outro.mp4")
+                            ok_in = tg.create_title_clip(movie_title, intro_mp4)
+                            ok_out = tg.create_credits_clip(movie_title, outro_mp4)
+                            if ok_in and ok_out:
+                                c_txt = os.path.join(tdir, "pkg.txt")
+                                with open(c_txt, "w", encoding="utf-8") as cf:
+                                    for p in (intro_mp4, output_movie_path, outro_mp4):
+                                        sp = p.replace("\\", "/").replace("'", "'\\''")
+                                        cf.write(f"file '{sp}'\n")
+                                pkg_out = output_movie_path + ".pkg.mp4"
+                                r_pkg = subprocess.run([
+                                    self.ffmpeg_path, "-y", "-f", "concat", "-safe", "0", "-i", c_txt,
+                                    "-c", "copy", pkg_out
+                                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                if r_pkg.returncode == 0 and os.path.exists(pkg_out):
+                                    os.replace(pkg_out, output_movie_path)
+                                    self.log("success", "🎞️ Added Opening Title Sequence & End Credits!")
+                    except Exception as te:
+                        self.log("warning", f"Title/Credits packaging skipped: {te}")
+
                 file_size_mb = round(os.path.getsize(output_movie_path) / (1024 * 1024), 2)
                 self.log("success", f"🎉 Master film compiled successfully: {file_size_mb} MB in {duration}s!")
                 if progress_callback:
